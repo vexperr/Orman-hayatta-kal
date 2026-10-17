@@ -100,6 +100,43 @@ const obstacles=[];
 
 let seed=1837;
 
+let moveX=0,moveY=0,moving=false;
+let cameraAngle = 0;
+let cameraPitch = 0.35;
+let draggingCamera = false;
+let lastTouchX = 0;
+let lastTouchY = 0;
+
+renderer.domElement.style.touchAction = 'none';
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  draggingCamera = true;
+  lastTouchX = e.clientX;
+  lastTouchY = e.clientY;
+  renderer.domElement.setPointerCapture(e.pointerId);
+});
+
+renderer.domElement.addEventListener('pointermove', e => {
+  if (!draggingCamera) return;
+
+  const dx = e.clientX - lastTouchX;
+  const dy = e.clientY - lastTouchY;
+
+  cameraAngle -= dx * 0.006;
+  cameraPitch = Math.max(-0.15, Math.min(0.8, cameraPitch + dy * 0.003));
+
+  lastTouchX = e.clientX;
+  lastTouchY = e.clientY;
+});
+
+function stopCameraDrag() {
+  draggingCamera = false;
+}
+
+renderer.domElement.addEventListener('pointerup', stopCameraDrag);
+renderer.domElement.addEventListener('pointercancel', stopCameraDrag);
+
 function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
 
 function makeTree(x,z,scale=1){
@@ -234,17 +271,33 @@ function animate(){
 
  if(Math.abs(moveX)+Math.abs(moveY)>.08){
 
-  const dx=moveX*5*dt,dz=moveY*5*dt;
+  
+const dx = (moveX * Math.cos(cameraAngle) +
+            moveY * Math.sin(cameraAngle)) * 5 * dt;
 
-  const nx=player.position.x+dx,nz=player.position.z+dz;
+const dz = (-moveX * Math.sin(cameraAngle) -
+            moveY * Math.cos(cameraAngle)) * 5 * dt;
 
-  let blocked=false;
+const nx = player.position.x + dx;
+const nz = player.position.z + dz;
 
-  for(const o of obstacles)if(Math.hypot(nx-o.x,nz-o.z)<o.r+.45){blocked=true;break}
+let blocked = false;
 
-  if(!blocked){player.position.x=nx;player.position.z=nz}
+for (const o of obstacles) {
+  if (Math.hypot(nx - o.x, nz - o.z) < o.r + 0.45) {
+    blocked = true;
+    break;
+  }
+}
 
-  player.rotation.y=Math.atan2(moveX,moveY);
+if (!blocked) {
+  player.position.x = nx;
+  player.position.z = nz;
+}
+
+if (Math.abs(dx) + Math.abs(dz) > 0.001) {
+  player.rotation.y = Math.atan2(dx, dz);
+}
 
   walkTime+=dt*10;
 
@@ -258,13 +311,23 @@ function animate(){
 
  }
 
- const target=new THREE.Vector3(player.position.x,1.2,player.position.z);
+ const target = new THREE.Vector3(
+  player.position.x,
+  1.2,
+  player.position.z
+);
 
- const desired=new THREE.Vector3(player.position.x,4.2,player.position.z+7);
+const distance = 7;
+const horizontal = distance * Math.cos(cameraPitch);
 
- camera.position.lerp(desired,.09);
+const desired = new THREE.Vector3(
+  player.position.x + Math.sin(cameraAngle) * horizontal,
+  player.position.y + 2.2 + distance * Math.sin(cameraPitch),
+  player.position.z + Math.cos(cameraAngle) * horizontal
+);
 
- camera.lookAt(target);
+camera.position.lerp(desired, 0.12);
+camera.lookAt(target);
 
  renderer.render(scene,camera);
 
