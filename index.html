@@ -42,46 +42,30 @@ function joySet(e){const r=stick.getBoundingClientRect(),dx=e.clientX-(r.left+r.
 stick.addEventListener('pointerdown',e=>{joystick.active=true;joystick.id=e.pointerId;stick.setPointerCapture(e.pointerId);joySet(e)});stick.addEventListener('pointermove',e=>{if(joystick.active&&e.pointerId===joystick.id)joySet(e)});function joyEnd(){joystick.active=false;joystick.x=joystick.y=0;knob.style.left=(stick.clientWidth/2-22)+'px';knob.style.top=(stick.clientHeight/2-22)+'px'}stick.addEventListener('pointerup',joyEnd);stick.addEventListener('pointercancel',joyEnd);
 function toast(s){$('toast').textContent=s;$('toast').style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.opacity='0',2000)}
 function updateUI(){$('hpv').textContent=Math.ceil(hp);$('foodv').textContent=Math.ceil(hunger);$('waterv').textContent=Math.ceil(thirst);$('hp').style.width=hp+'%';$('food').style.width=hunger+'%';$('water').style.width=thirst+'%';$('bag').textContent=`🪵 ${inv.wood} · 🪨 ${inv.stone} · 🍓 ${inv.berry}`;$('mission').textContent=inv.wood<5?`Kamp ateşi için odun topla (${inv.wood}/5).`:'Ateş kur ve hayatta kal!';$('day').textContent=`${1+Math.floor(elapsed/100)}. gün · ${(Math.floor(elapsed/50)%2===0)?'☀️ Gündüz':'🌙 Gece'}`}
-function project(x,z){let dx=x-player.x,dz=z-player.z,ca=Math.cos(player.angle),sa=Math.sin(player.angle);let side=dx*ca-dz*sa,depth=dx*sa+dz*ca;if(depth<.25)return null;let focal=Math.min(W,H)*.83;return {x:W/2+side*focal/depth,y:H*.47+focal*.35/depth,scale:focal/depth,depth}}
-function drawTree(t){const p=project(t.x,t.z);if(!p||p.scale<.8||p.x<-80||p.x>W+80)return;const s=p.scale*t.scale;ctx.fillStyle='#362d20';ctx.fillRect(p.x-s*.09,p.y-s*.52,s*.18,s*.55);ctx.fillStyle=['#17492e','#20613a','#2d7040'][t.tone];ctx.beginPath();ctx.moveTo(p.x,p.y-s*1.9);ctx.lineTo(p.x-s*.52,p.y-s*.35);ctx.lineTo(p.x+s*.52,p.y-s*.35);ctx.closePath();ctx.fill();ctx.fillStyle=['#1c5533','#286b3c','#347b47'][t.tone];ctx.beginPath();ctx.moveTo(p.x,p.y-s*1.55);ctx.lineTo(p.x-s*.43,p.y-s*.08);ctx.lineTo(p.x+s*.43,p.y-s*.08);ctx.closePath();ctx.fill()}
+function project(x,z){
+ const dx=x-player.x;
+ const dz=z-player.z;
+ const ca=Math.cos(player.angle);
+ const sa=Math.sin(player.angle);
+
+ const side=dx*ca-dz*sa;
+ const depth=dx*sa+dz*ca;
+
+ if(depth<0.5)return null;
+
+ const focal=Math.min(W,H)*0.72;
+ const horizon=H*0.40;
+
+ return {
+   x:W/2+side*focal/depth,
+   y:horizon+focal*0.30/depth,
+   scale:focal/depth,
+   depth
+ };
+}function drawTree(t){const p=project(t.x,t.z);if(!p||p.scale<.8||p.x<-80||p.x>W+80)return;const s=p.scale*t.scale;ctx.fillStyle='#362d20';ctx.fillRect(p.x-s*.09,p.y-s*.52,s*.18,s*.55);ctx.fillStyle=['#17492e','#20613a','#2d7040'][t.tone];ctx.beginPath();ctx.moveTo(p.x,p.y-s*1.9);ctx.lineTo(p.x-s*.52,p.y-s*.35);ctx.lineTo(p.x+s*.52,p.y-s*.35);ctx.closePath();ctx.fill();ctx.fillStyle=['#1c5533','#286b3c','#347b47'][t.tone];ctx.beginPath();ctx.moveTo(p.x,p.y-s*1.55);ctx.lineTo(p.x-s*.43,p.y-s*.08);ctx.lineTo(p.x+s*.43,p.y-s*.08);ctx.closePath();ctx.fill()}
 function drawItem(it){if(it.taken)return;const p=project(it.x,it.z);if(!p||p.scale<2||p.x<-20||p.x>W+20)return;let s=Math.min(22,p.scale*.12);ctx.save();ctx.translate(p.x,p.y);if(it.type==='wood'){ctx.strokeStyle='#c49a62';ctx.lineWidth=Math.max(2,s*.25);ctx.beginPath();ctx.moveTo(-s,0);ctx.lineTo(s,0);ctx.stroke()}else if(it.type==='stone'){ctx.fillStyle='#9da9a0';ctx.beginPath();ctx.moveTo(-s*.8,0);ctx.lineTo(-s*.3,-s*.7);ctx.lineTo(s*.5,-s*.55);ctx.lineTo(s,0);ctx.closePath();ctx.fill()}else{ctx.fillStyle='#e35d68';ctx.beginPath();ctx.arc(-s*.35,-s*.25,s*.38,0,7);ctx.arc(s*.25,-s*.3,s*.38,0,7);ctx.fill();ctx.strokeStyle='#5a9b4b';ctx.beginPath();ctx.moveTo(0,-s*.55);ctx.lineTo(s*.15,-s*.9);ctx.stroke()}ctx.restore()}
 function drawPlayer(){
- const x=W/2,y=H*.67;
- const moving=Math.abs(joystick.x)+Math.abs(joystick.y)>.15;
- const swing=moving?Math.sin(elapsed*10)*5:0;
-
- // Gölge
- ctx.fillStyle='#0004';
- ctx.beginPath();
- ctx.ellipse(x,y+4,14,5,0,0,Math.PI*2);
- ctx.fill();
-
- // Botlar ve bacaklar
- ctx.strokeStyle='#27332b';
- ctx.lineWidth=7;
- ctx.lineCap='round';
- ctx.beginPath();
- ctx.moveTo(x-5,y-9);
- ctx.lineTo(x-7+swing,y+3);
- ctx.moveTo(x+5,y-9);
- ctx.lineTo(x+7-swing,y+3);
- ctx.stroke();
-
- ctx.fillStyle='#171d18';
- ctx.fillRect(x-12+swing,y-1,9,5);
- ctx.fillRect(x+3-swing,y-1,9,5);
-
- // Sırt çantası
- ctx.fillStyle='#77552f';
- ctx.fillRect(x-13,y-34,26,22);
-
- // Gövde
- ctx.fillStyle='#355f46';
- ctx.fillRect(x-10,y-36,20,28);
-
- // Kollar
- ctx.strokeStyle='#c49a76';
- ctx.lineWidth=6;
+ const x=W/2,y=H*.73;
  ctx.beginPath();
  ctx.moveTo(x-10,y-32);
  ctx.lineTo(x-15-swing*.5,y-18);
