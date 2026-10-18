@@ -394,6 +394,7 @@ function nearestResource(){
 }
 
 
+
 $('gather').addEventListener('click',()=>{
  const r=nearestResource();
 
@@ -403,40 +404,42 @@ $('gather').addEventListener('click',()=>{
  }
 
  if(r.type==='wood'){
-  r.hp--;
+  if(r.hp===undefined)r.hp=3;
 
-  // Ağaç hasar aldıkça gövdesini hafifçe küçült.
-  const ratio=Math.max(.35,r.hp/r.maxHp);
-  r.object.scale.set(ratio,ratio,ratio);
+  const damage=state.axe?3:1;
+  r.hp-=damage;
+
+  // Darbe efekti
+  r.object.rotation.z=.08;
+  setTimeout(()=>{
+   if(r.object && r.active)r.object.rotation.z=0;
+  },120);
 
   if(r.hp<=0){
    r.active=false;
    scene.remove(r.object);
    state.wood+=3;
    refresh();
-   say('Ağaç kesildi! 3 odun kazandın.');
+   say(state.axe?'Baltayla ağacı kestin! 3 odun kazandın.':'Ağacı kestin! 3 odun kazandın.');
   }else{
-   say('Ağaca vurdun! Kalan vuruş: '+r.hp);
+   say(state.axe?'Baltayla vurdun!':'Ağaca vurdun! Kalan dayanıklılık: '+r.hp);
   }
-
   return;
  }
 
  r.active=false;
  scene.remove(r.object);
 
- 
-if(r.type==='stone'){
- state.stone++;
- say('Taş topladın.');
-}else if(r.type==='berry'){
- state.berry+=2;
- say('2 meyve topladın.');
-}else if(r.type==='fiber'){
- state.fiber++;
- say('1 bitki lifi topladın.');
-}
-
+ if(r.type==='stone'){
+  state.stone++;
+  say('Taş topladın.');
+ }else if(r.type==='berry'){
+  state.berry+=2;
+  say('2 meyve topladın.');
+ }else if(r.type==='fiber'){
+  state.fiber++;
+  say('1 bitki lifi topladın.');
+ }
 
  refresh();
 });
