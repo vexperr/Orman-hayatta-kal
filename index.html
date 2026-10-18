@@ -8,7 +8,7 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
 <title>Ormanda Hayatta Kal</title>
 
@@ -16,19 +16,35 @@
 
 *{box-sizing:border-box}
 
-body{margin:0;overflow:hidden;background:#14251b;font-family:Arial;color:white;touch-action:none}
+body{margin:0;overflow:hidden;background:#17251b;color:white;font-family:Arial,sans-serif;touch-action:none;user-select:none}
 
 canvas{display:block}
 
-#hud{position:fixed;top:12px;left:12px;z-index:2;background:#0008;padding:12px;border-radius:12px;line-height:1.8}
+.panel{background:#101a17dd;border:1px solid #ffffff30;border-radius:13px;padding:10px}
 
-#hint{position:fixed;top:12px;right:12px;background:#0008;padding:10px;border-radius:10px;font-size:12px}
+#hud{position:fixed;top:10px;left:10px;z-index:3;width:175px;font-size:12px}
 
-#joystick{position:fixed;bottom:28px;left:28px;width:120px;height:120px;border-radius:50%;background:#ffffff26;border:2px solid #ffffff66;z-index:3;touch-action:none}
+#title{font-size:14px;font-weight:bold;margin-bottom:6px}
 
-#stick{position:absolute;left:35px;top:35px;width:46px;height:46px;border-radius:50%;background:#ffffffb8}
+.bar{height:6px;background:#ffffff25;border-radius:8px;overflow:hidden;margin:3px 0 6px}
 
-#message{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0009;padding:9px 14px;border-radius:10px;white-space:nowrap;font-size:13px}
+.fill{height:100%;width:100%}
+
+#inventory{position:fixed;top:10px;right:10px;z-index:3;font-size:12px;line-height:1.7}
+
+#joystick{position:fixed;bottom:24px;left:22px;width:115px;height:115px;border:2px solid #ffffff70;border-radius:50%;background:#ffffff1c;z-index:5;touch-action:none}
+
+#stick{position:absolute;left:33px;top:33px;width:45px;height:45px;border-radius:50%;background:#ffffffcf}
+
+#actions{position:fixed;right:12px;bottom:22px;display:flex;flex-direction:column;gap:8px;z-index:5}
+
+button{background:#203c2fee;color:white;border:1px solid #ffffff55;border-radius:12px;padding:12px 10px;font-size:12px;font-weight:bold;touch-action:manipulation}
+
+button:active{background:#4b7954}
+
+#status{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);max-width:45%;text-align:center;background:#101a17dd;border-radius:9px;padding:8px;font-size:11px;pointer-events:none}
+
+@media(max-width:500px){#hud{width:145px;font-size:10px}#title{font-size:12px}#inventory{font-size:10px}button{padding:11px 8px;font-size:11px}#joystick{width:105px;height:105px}#stick{left:29px;top:29px}}
 
 </style>
 
@@ -36,232 +52,382 @@ canvas{display:block}
 
 <body>
 
-<div id="hud">🌲 ORMANDA HAYATTA KAL<br>❤️ Can: 100<br>🍖 Açlık: 100<br>💧 Susuzluk: 100</div>
+<div id="hud" class="panel">
 
-<div id="hint">İLK SÜRÜM<br>3D keşif</div>
+<div id="title">🌲 ORMANDA HAYATTA KAL</div>
+
+❤️ Can: <span id="healthN">100</span><div class="bar"><div id="healthB" class="fill" style="background:#e95757"></div></div>
+
+🍖 Açlık: <span id="hungerN">100</span><div class="bar"><div id="hungerB" class="fill" style="background:#e6b34c"></div></div>
+
+💧 Susuzluk: <span id="thirstN">100</span><div class="bar"><div id="thirstB" class="fill" style="background:#52b9ed"></div></div>
+
+</div>
+
+<div id="inventory" class="panel">
+
+<b>🎒 ÇANTA</b><br>🪵 Odun: <span id="woodN">0</span><br>🪨 Taş: <span id="stoneN">0</span><br>🍓 Meyve: <span id="berryN">0</span><br>🔥 Ateş: <span id="fireN">Yok</span>
+
+</div>
 
 <div id="joystick"><div id="stick"></div></div>
 
-<div id="message">Joystick ile ormanda hareket et</div>
+<div id="actions">
+
+<button id="gather">✋ TOPLA</button>
+
+<button id="eat">🍓 MEYVE YE</button>
+
+<button id="craft">🔥 ATEŞ YAK (3 odun)</button>
+
+</div>
+
+<div id="status">Joystick ile yürü. Kamerayı çevirmek için ekranı sürükle.</div>
 
 <script type="module">
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-const scene = new THREE.Scene();
+const $=id=>document.getElementById(id);
 
-scene.background = new THREE.Color(0x9bb9c1);
+const scene=new THREE.Scene();
 
-scene.fog = new THREE.Fog(0x9bb9c1, 25, 100);
+scene.background=new THREE.Color(0x9ebbc2);
 
-const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 200);
+scene.fog=new THREE.Fog(0x9ebbc2,35,105);
 
-const renderer = new THREE.WebGLRenderer({antialias:true});
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,180);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 
 renderer.setSize(innerWidth,innerHeight);
 
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 
-renderer.shadowMap.enabled = true;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
 
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xd8edff,0x304326,2));
+scene.add(new THREE.HemisphereLight(0xe4f3ff,0x34452c,2));
 
-const sun = new THREE.DirectionalLight(0xffe5b3,2.2);
+const sun=new THREE.DirectionalLight(0xffe4b4,2);
 
-sun.position.set(12,22,8);
+sun.position.set(-20,35,15);scene.add(sun);
 
-sun.castShadow=true;
+const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:1});
 
-scene.add(sun);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(240,240),mat(0x496c3b));
 
-const ground = new THREE.Mesh(
+ground.rotation.x=-Math.PI/2;ground.position.y=-.12;scene.add(ground);
 
- new THREE.PlaneGeometry(220,220),
-
- new THREE.MeshStandardMaterial({color:0x42613b,roughness:1})
-
-);
-
-ground.rotation.x=-Math.PI/2;
-
-ground.position.y=-0.08;
-
-ground.receiveShadow=true;
-
-scene.add(ground);
-
-const mat = (color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
-
-const trunkMat=mat(0x62452c),leafMats=[mat(0x244b2e),mat(0x315d35),mat(0x3e6939)];
-
-const obstacles=[];
-
-let seed=1837;
-
-let moveX=0,moveY=0,moving=false;
-let cameraAngle = 0;
-let cameraPitch = 0.35;
-let draggingCamera = false;
-let lastTouchX = 0;
-let lastTouchY = 0;
-
-renderer.domElement.style.touchAction = 'none';
-
-renderer.domElement.addEventListener('pointerdown', e => {
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  draggingCamera = true;
-  lastTouchX = e.clientX;
-  lastTouchY = e.clientY;
-  renderer.domElement.setPointerCapture(e.pointerId);
-});
-
-renderer.domElement.addEventListener('pointermove', e => {
-  if (!draggingCamera) return;
-
-  const dx = e.clientX - lastTouchX;
-  const dy = e.clientY - lastTouchY;
-
-  cameraAngle -= dx * 0.006;
-  cameraPitch = Math.max(-0.15, Math.min(0.8, cameraPitch + dy * 0.003));
-
-  lastTouchX = e.clientX;
-  lastTouchY = e.clientY;
-});
-
-function stopCameraDrag() {
-  draggingCamera = false;
-}
-
-renderer.domElement.addEventListener('pointerup', stopCameraDrag);
-renderer.domElement.addEventListener('pointercancel', stopCameraDrag);
+let seed=82731;
 
 function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
 
-function makeTree(x,z,scale=1){
+const obstacles=[],resources=[];
 
- const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22*scale,.34*scale,2.5*scale,7),trunkMat);
+const trunkMat=mat(0x68462b);
 
- trunk.position.set(x,1.25*scale,z);
+const leafMats=[mat(0x234a2c),mat(0x315b32),mat(0x3d6938)];
 
- trunk.castShadow=true;scene.add(trunk);
+const rockMat=mat(0x777e78);
+
+function makeTree(x,z,s){
+
+ const g=new THREE.Group();
+
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.19*s,.29*s,2.2*s,7),trunkMat);
+
+ trunk.position.y=1.1*s;g.add(trunk);
 
  for(let i=0;i<3;i++){
 
-  const crown=new THREE.Mesh(
+  const crown=new THREE.Mesh(new THREE.ConeGeometry((1.25-i*.18)*s,2*s,7),leafMats[Math.floor(rand()*3)]);
 
-   new THREE.ConeGeometry((1.5-i*.22)*scale,2.3*scale,7),
-
-   leafMats[Math.floor(rand()*leafMats.length)]
-
-  );
-
-  crown.position.set(x,(2.5+i*.85)*scale,z);
-
-  crown.castShadow=true;scene.add(crown);
+  crown.position.y=(2.2+i*.72)*s;g.add(crown);
 
  }
 
- obstacles.push({x,z,r:.7*scale});
+ g.position.set(x,0,z);scene.add(g);
+
+ obstacles.push({x,z,r:.58*s});
+
+ resources.push({
+ type:'wood', x, z, object:g, active:true,
+ hp:3, maxHp:3
+});
 
 }
 
-for(let i=0;i<190;i++){
+for(let i=0;i<145;i++){
 
  const x=(rand()-.5)*100,z=(rand()-.5)*100;
 
- if(Math.hypot(x,z)<7)continue;
-
- makeTree(x,z,.75+rand()*.65);
+ if(Math.hypot(x,z)>8)makeTree(x,z,.75+rand()*.6);
 
 }
 
-for(let i=0;i<65;i++){
+for(let i=0;i<48;i++){
 
- const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.25+rand()*.55,0),mat(0x777d76));
+ const x=(rand()-.5)*90,z=(rand()-.5)*90;
 
- rock.position.set((rand()-.5)*90,.2,(rand()-.5)*90);
+ if(Math.hypot(x,z)<5)continue;
 
- rock.scale.y=.6;rock.castShadow=true;scene.add(rock);
+ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.3+rand()*.35,0),rockMat);
+
+ r.position.set(x,.2,z);r.scale.y=.65;scene.add(r);
+
+ resources.push({type:'stone',x,z,object:r,active:true});
+
+}
+
+for(let i=0;i<18;i++){
+
+ const x=(rand()-.5)*65,z=(rand()-.5)*65;
+
+ if(Math.hypot(x,z)<5)continue;
+
+ const bush=new THREE.Group();
+
+ const leaves=new THREE.Mesh(new THREE.SphereGeometry(.42,7,6),leafMats[1]);
+
+ leaves.position.y=.38;bush.add(leaves);
+
+ for(let j=0;j<4;j++){
+
+  const berry=new THREE.Mesh(new THREE.SphereGeometry(.09,7,6),mat(0xb62e48));
+
+  berry.position.set((rand()-.5)*.5,.45+rand()*.25,(rand()-.5)*.5);bush.add(berry);
+
+ }
+
+ bush.position.set(x,0,z);scene.add(bush);
+
+ resources.push({type:'berry',x,z,object:bush,active:true});
 
 }
 
 const player=new THREE.Group();
 
-const skin=mat(0xd9a477),shirt=mat(0x344b78),pants=mat(0x343a3c),boots=mat(0x33271d);
+const shirt=mat(0x354f75),pants=mat(0x34383b),skin=mat(0xd5a17b),boots=mat(0x30261d);
 
 function capsule(radius,length,material,x,y,z){
 
- const mesh=new THREE.Mesh(new THREE.CapsuleGeometry(radius,length,4,8),material);
+ const m=new THREE.Mesh(new THREE.CapsuleGeometry(radius,length,3,7),material);
 
- mesh.position.set(x,y,z);mesh.castShadow=true;player.add(mesh);return mesh;
+ m.position.set(x,y,z);player.add(m);return m;
 
 }
 
-capsule(.34,.65,shirt,0,1.35,0);
+capsule(.31,.62,shirt,0,1.32,0);
 
-const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,10),skin);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),skin);
 
-head.position.y=2;head.castShadow=true;player.add(head);
+head.position.y=1.98;player.add(head);
 
 const legs=[];
 
-for(const x of [-.17,.17]){
+for(const x of [-.16,.16]){
 
- const leg=capsule(.13,.48,pants,x,.66,0);legs.push(leg);
+ legs.push(capsule(.12,.43,pants,x,.64,0));
 
- const foot=new THREE.Mesh(new THREE.BoxGeometry(.22,.13,.36),boots);
+ const foot=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.32),boots);
 
- foot.position.set(x,.25,.08);player.add(foot);
-
-}
-
-for(const x of [-.43,.43]){
-
- const arm=capsule(.12,.42,skin,x,1.36,0);
-
- arm.rotation.z=x<0?-.15:.15;
+ foot.position.set(x,.24,.06);player.add(foot);
 
 }
 
-player.position.set(0,0,0);scene.add(player);
+for(const x of [-.39,.39])capsule(.11,.39,skin,x,1.36,0);
 
-let moveX=0,moveY=0,moving=false;
+scene.add(player);
 
-const joy=document.getElementById('joystick'),stick=document.getElementById('stick');
+const state={health:100,hunger:100,thirst:100,wood:0,stone:0,berry:0,fire:false};
 
-let activePointer=null;
+function say(s){$('status').textContent=s}
 
-function updateJoy(e){
+function refresh(){
+
+ for(const k of ['health','hunger','thirst']){
+
+  $(k+'N').textContent=Math.round(state[k]);
+
+  $(k+'B').style.width=state[k]+'%';
+
+ }
+
+ for(const k of ['wood','stone','berry'])$(k+'N').textContent=state[k];
+
+ $('fireN').textContent=state.fire?'Var':'Yok';
+
+}
+
+let moveX=0,moveY=0,cameraAngle=0,cameraPitch=.25;
+
+const joy=$('joystick'),stick=$('stick');
+
+let joyId=null;
+
+function joyUpdate(e){
 
  const r=joy.getBoundingClientRect();
 
- let x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2);
+ let x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2;
 
- const d=Math.hypot(x,y),max=38;
+ const max=33,d=Math.hypot(x,y);
 
  if(d>max){x=x/d*max;y=y/d*max}
 
  moveX=x/max;moveY=y/max;
 
- stick.style.left=(35+x)+'px';stick.style.top=(35+y)+'px';
+ stick.style.left=(r.width/2-22.5+x)+'px';
+
+ stick.style.top=(r.height/2-22.5+y)+'px';
 
 }
 
-joy.addEventListener('pointerdown',e=>{activePointer=e.pointerId;joy.setPointerCapture(e.pointerId);updateJoy(e)});
+joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyUpdate(e)});
 
-joy.addEventListener('pointermove',e=>{if(e.pointerId===activePointer)updateJoy(e)});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyUpdate(e)});
 
-function resetJoy(){activePointer=null;moveX=moveY=0;stick.style.left='35px';stick.style.top='35px'}
+function joyEnd(){joyId=null;moveX=moveY=0;stick.style.left='calc(50% - 22.5px)';stick.style.top='calc(50% - 22.5px)'}
 
-joy.addEventListener('pointerup',resetJoy);
+joy.addEventListener('pointerup',joyEnd);
 
-joy.addEventListener('pointercancel',resetJoy);
+joy.addEventListener('pointercancel',joyEnd);
+
+let dragging=false,lastX=0,lastY=0;
+
+renderer.domElement.style.touchAction='none';
+
+renderer.domElement.addEventListener('pointerdown',e=>{
+
+ dragging=true;lastX=e.clientX;lastY=e.clientY;
+
+ renderer.domElement.setPointerCapture(e.pointerId);
+
+});
+
+renderer.domElement.addEventListener('pointermove',e=>{
+
+ if(!dragging)return;
+
+ cameraAngle-=(e.clientX-lastX)*.006;
+
+ cameraPitch=Math.max(-.1,Math.min(.75,cameraPitch+(e.clientY-lastY)*.003));
+
+ lastX=e.clientX;lastY=e.clientY;
+
+});
+
+renderer.domElement.addEventListener('pointerup',()=>dragging=false);
+
+renderer.domElement.addEventListener('pointercancel',()=>dragging=false);
+
+function nearestResource(){
+
+ let best=null,distance=3.2;
+
+ for(const r of resources){
+
+  if(!r.active)continue;
+
+  const d=Math.hypot(player.position.x-r.x,player.position.z-r.z);
+
+  if(d<distance){distance=d;best=r}
+
+ }
+
+ return best;
+
+}
+
+
+$('gather').addEventListener('click',()=>{
+ const r=nearestResource();
+
+ if(!r){
+  say('Yakında kaynak yok. Biraz yaklaş.');
+  return;
+ }
+
+ if(r.type==='wood'){
+  r.hp--;
+
+  // Ağaç hasar aldıkça gövdesini hafifçe küçült.
+  const ratio=Math.max(.35,r.hp/r.maxHp);
+  r.object.scale.set(ratio,ratio,ratio);
+
+  if(r.hp<=0){
+   r.active=false;
+   scene.remove(r.object);
+   state.wood+=3;
+   refresh();
+   say('Ağaç kesildi! 3 odun kazandın.');
+  }else{
+   say('Ağaca vurdun! Kalan vuruş: '+r.hp);
+  }
+
+  return;
+ }
+
+ r.active=false;
+ scene.remove(r.object);
+
+ if(r.type==='stone'){
+  state.stone++;
+  say('Taş topladın.');
+ }else if(r.type==='berry'){
+  state.berry+=2;
+  say('2 meyve topladın.');
+ }
+
+ refresh();
+});
+
+
+$('eat').addEventListener('click',()=>{
+
+ if(state.berry<1){say('Önce çalılardan meyve topla.');return}
+
+ state.berry--;state.hunger=Math.min(100,state.hunger+18);
+
+ state.thirst=Math.min(100,state.thirst+5);
+
+ refresh();say('Meyve yedin.');
+
+});
+
+$('craft').addEventListener('click',()=>{
+
+ if(state.wood<3){say('Ateş için 3 odun gerekli.');return}
+
+ if(state.fire){say('Kamp ateşin zaten var.');return}
+
+ state.wood-=3;state.fire=true;
+
+ const fire=new THREE.Group();
+
+ const log=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.1,7),trunkMat);
+
+ log.rotation.z=Math.PI/2;log.position.y=.12;fire.add(log);
+
+ const flame=new THREE.Mesh(new THREE.ConeGeometry(.3,.8,7),new THREE.MeshBasicMaterial({color:0xff8a22}));
+
+ flame.position.y=.55;fire.add(flame);
+
+ const light=new THREE.PointLight(0xff9b38,2,9);light.position.y=1;fire.add(light);
+
+ fire.position.set(player.position.x,0,player.position.z-1.5);scene.add(fire);
+
+ refresh();say('Kamp ateşi kuruldu!');
+
+});
 
 const clock=new THREE.Clock();
 
-let walkTime=0;
+let walkTime=0,elapsed=0;
+
+const target=new THREE.Vector3(),desired=new THREE.Vector3();
 
 function animate(){
 
@@ -269,71 +435,73 @@ function animate(){
 
  const dt=Math.min(clock.getDelta(),.04);
 
- if(Math.abs(moveX)+Math.abs(moveY)>.08){
+ elapsed+=dt;
 
-  
-const dx = (moveX * Math.cos(cameraAngle) +
-            moveY * Math.sin(cameraAngle)) * 5 * dt;
+ if(elapsed>5){
 
-const dz = (-moveX * Math.sin(cameraAngle) -
-            moveY * Math.cos(cameraAngle)) * 5 * dt;
+  elapsed=0;
 
-const nx = player.position.x + dx;
-const nz = player.position.z + dz;
+  state.hunger=Math.max(0,state.hunger-.12);
 
-let blocked = false;
+  state.thirst=Math.max(0,state.thirst-.2);
 
-for (const o of obstacles) {
-  if (Math.hypot(nx - o.x, nz - o.z) < o.r + 0.45) {
-    blocked = true;
-    break;
-  }
-}
+  if(state.hunger===0||state.thirst===0)state.health=Math.max(0,state.health-.5);
 
-if (!blocked) {
-  player.position.x = nx;
-  player.position.z = nz;
-}
+  refresh();
 
-if (Math.abs(dx) + Math.abs(dz) > 0.001) {
-  player.rotation.y = Math.atan2(dx, dz);
-}
-
-  walkTime+=dt*10;
-
-  legs[0].rotation.x=Math.sin(walkTime)*.65;
-
-  legs[1].rotation.x=-Math.sin(walkTime)*.65;
-
- }else{
-
-  legs.forEach(l=>l.rotation.x*=.8);
+  if(state.health===0)say('Gücün tükendi.');
 
  }
 
- const target = new THREE.Vector3(
-  player.position.x,
-  1.2,
-  player.position.z
-);
+ if(Math.hypot(moveX,moveY)>.08&&state.health>0){
 
-const distance = 7;
-const horizontal = distance * Math.cos(cameraPitch);
+  const forward=moveY,right=moveX;
 
-const desired = new THREE.Vector3(
-  player.position.x + Math.sin(cameraAngle) * horizontal,
-  player.position.y + 2.2 + distance * Math.sin(cameraPitch),
-  player.position.z + Math.cos(cameraAngle) * horizontal
-);
+  const dx=(right*Math.cos(cameraAngle)+forward*Math.sin(cameraAngle))*4.5*dt;
 
-camera.position.lerp(desired, 0.12);
-camera.lookAt(target);
+  const dz=(-right*Math.sin(cameraAngle)+forward*Math.cos(cameraAngle))*4.5*dt;
+
+  const nx=player.position.x+dx,nz=player.position.z+dz;
+
+  let blocked=false;
+
+  for(const o of obstacles)if(Math.hypot(nx-o.x,nz-o.z)<o.r+.42){blocked=true;break}
+
+  if(!blocked){player.position.x=nx;player.position.z=nz}
+
+  player.rotation.y=Math.atan2(dx,dz);
+
+  walkTime+=dt*9;
+
+  legs[0].rotation.x=Math.sin(walkTime)*.6;
+
+  legs[1].rotation.x=-Math.sin(walkTime)*.6;
+
+ }else legs.forEach(l=>l.rotation.x*=.8);
+
+ target.set(player.position.x,1.15,player.position.z);
+
+ const distance=7,horizontal=distance*Math.cos(cameraPitch);
+
+ desired.set(
+
+  player.position.x+Math.sin(cameraAngle)*horizontal,
+
+  player.position.y+2.2+distance*Math.sin(cameraPitch),
+
+  player.position.z+Math.cos(cameraAngle)*horizontal
+
+ );
+
+ camera.position.lerp(desired,.12);
+
+ camera.lookAt(target);
 
  renderer.render(scene,camera);
 
 }
 
-animate();
+refresh();animate();
 
 addEventListener('resize',()=>{
 
@@ -342,6 +510,8 @@ addEventListener('resize',()=>{
  camera.updateProjectionMatrix();
 
  renderer.setSize(innerWidth,innerHeight);
+
+ renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 
 });
 
