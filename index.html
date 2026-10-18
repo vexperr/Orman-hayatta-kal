@@ -79,6 +79,34 @@ button:active{background:#4b7954}
 </div>
 
 
+<button id="craftingToggle" style="position:fixed;top:202px;right:10px;z-index:8">
+🛠️ ÜRETİM
+</button>
+
+<div id="craftingPanel" style="
+display:none;
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+width:min(350px,92vw);
+max-height:75vh;
+overflow:auto;
+background:#17251bf7;
+border:1px solid #ffffff55;
+border-radius:16px;
+padding:16px;
+z-index:11;
+color:white;
+font-family:Arial,sans-serif;
+">
+ <div style="display:flex;justify-content:space-between;align-items:center">
+  <b style="font-size:18px">🛠️ ÜRETİM MASASI</b>
+  <button id="craftingClose">✕</button>
+ </div>
+ <div id="craftingRecipes" style="display:grid;gap:10px;margin-top:14px"></div>
+</div>
+
 <button id="inventoryToggle" style="position:fixed;top:155px;right:10px;z-index:8">
 🎒 ÇANTAM
 </button>
@@ -376,6 +404,62 @@ function renderInventory(){
   </div>
  `).join('');
 }
+
+
+function renderCrafting(){
+ const recipes=[
+  {id:'rope',icon:'🧵',name:'İp',desc:'3 bitki lifi',ready:()=>state.fiber>=3},
+  {id:'axe',icon:'🪓',name:'Taş balta',desc:'2 odun + 1 taş + 1 ip',ready:()=>state.wood>=2&&state.stone>=1&&state.rope>=1&&!state.axe},
+  {id:'fire',icon:'🔥',name:'Kamp ateşi',desc:'3 odun',ready:()=>state.wood>=3&&!state.fire},
+  {id:'shelter',icon:'🏠',name:'Barınak',desc:'8 odun',ready:()=>state.wood>=8}
+ ];
+
+ $('craftingRecipes').innerHTML=recipes.map(r=>`
+  <div style="display:flex;align-items:center;gap:10px;background:#ffffff12;padding:10px;border-radius:10px">
+   <div style="font-size:27px">${r.icon}</div>
+   <div style="flex:1">
+    <b>${r.name}</b>
+    <div style="font-size:11px;color:#c1cfc3;margin-top:4px">${r.desc}</div>
+   </div>
+   <button data-recipe="${r.id}" ${r.ready()?'':'disabled'} style="${r.ready()?'':'opacity:.4'}">ÜRET</button>
+  </div>
+ `).join('');
+}
+
+$('craftingToggle').addEventListener('click',()=>{
+ renderCrafting();
+ $('craftingPanel').style.display='block';
+});
+$('craftingClose').addEventListener('click',()=>{
+ $('craftingPanel').style.display='none';
+});
+
+$('craftingRecipes').addEventListener('click',e=>{
+ const button=e.target.closest('button[data-recipe]');
+ if(!button)return;
+
+ const id=button.dataset.recipe;
+
+ if(id==='rope'){
+  if(state.fiber<3)return;
+  state.fiber-=3;
+  state.rope++;
+ }else if(id==='axe'){
+  if(state.wood<2||state.stone<1||state.rope<1||state.axe)return;
+  state.wood-=2;state.stone--;state.rope--;state.axe=true;
+ }else if(id==='fire'){
+  if(state.wood<3||state.fire)return;
+  $('craft').click();
+ }else if(id==='shelter'){
+  if(state.wood<8)return;
+  $('makeShelter').click();
+ }
+
+ refresh();
+ renderInventory();
+ renderCrafting();
+ say('Üretim tamamlandı.');
+});
 
 $('inventoryToggle').addEventListener('click',()=>{
  renderInventory();
