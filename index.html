@@ -66,7 +66,15 @@ button:active{background:#4b7954}
 
 <div id="inventory" class="panel">
 
-<b>🎒 ÇANTA</b><br>🪵 Odun: <span id="woodN">0</span><br>🪨 Taş: <span id="stoneN">0</span><br>🍓 Meyve: <span id="berryN">0</span><br>🔥 Ateş: <span id="fireN">Yok</span>
+<b>🎒 ÇANTA</b>
+<br>🪵 Odun: <span id="woodN">0</span>
+<br>🪨 Taş: <span id="stoneN">0</span>
+<br>🍓 Meyve: <span id="berryN">0</span><br>
+<br>🌿 Lif: <span id="fiberN">0</span>
+<br>🧵 İp: <span id="ropeN">0</span>
+<br>🪓 Balta: <span id="axeN">Yok</span>
+
+🔥 Ateş: <span id="fireN">Yok</span>
 
 </div>
 
@@ -77,6 +85,10 @@ button:active{background:#4b7954}
 <button id="gather">✋ TOPLA</button>
 
 <button id="eat">🍓 MEYVE YE</button>
+
+<button id="makeRope">🧵 İP ÜRET (3 lif)</button>
+
+<button id="makeAxe">🪓 BALTA ÜRET</button>
 
 <button id="craft">🔥 ATEŞ YAK (3 odun)</button>
 
@@ -207,6 +219,44 @@ for(let i=0;i<18;i++){
 
 }
 
+const fiberMat = mat(0x79934a);
+
+for(let i=0;i<24;i++){
+ const x=(rand()-.5)*75;
+ const z=(rand()-.5)*75;
+
+ if(Math.hypot(x,z)<6) continue;
+
+ const plant=new THREE.Group();
+
+ for(let j=0;j<5;j++){
+  const leaf=new THREE.Mesh(
+   new THREE.ConeGeometry(.12,.9,5),
+   fiberMat
+  );
+
+  leaf.position.set(
+   (rand()-.5)*.4,
+   .45,
+   (rand()-.5)*.4
+  );
+
+  leaf.rotation.z=(rand()-.5)*.7;
+  leaf.rotation.x=(rand()-.5)*.6;
+  plant.add(leaf);
+ }
+
+ plant.position.set(x,0,z);
+ scene.add(plant);
+
+ resources.push({
+  type:'fiber',
+  x,z,
+  object:plant,
+  active:true
+ });
+}
+
 const player=new THREE.Group();
 
 const shirt=mat(0x354f75),pants=mat(0x34383b),skin=mat(0xd5a17b),boots=mat(0x30261d);
@@ -258,7 +308,9 @@ function refresh(){
  for(const k of ['wood','stone','berry'])$(k+'N').textContent=state[k];
 
  $('fireN').textContent=state.fire?'Var':'Yok';
-
+ $('fiberN').textContent=state.fiber;
+ $('ropeN').textContent=state.rope;
+ $('axeN').textContent=state.axe?'Var':'Yok';
 }
 
 let moveX=0,moveY=0,cameraAngle=0,cameraPitch=.25;
@@ -373,13 +425,18 @@ $('gather').addEventListener('click',()=>{
  r.active=false;
  scene.remove(r.object);
 
- if(r.type==='stone'){
-  state.stone++;
-  say('Taş topladın.');
- }else if(r.type==='berry'){
-  state.berry+=2;
-  say('2 meyve topladın.');
- }
+ 
+if(r.type==='stone'){
+ state.stone++;
+ say('Taş topladın.');
+}else if(r.type==='berry'){
+ state.berry+=2;
+ say('2 meyve topladın.');
+}else if(r.type==='fiber'){
+ state.fiber++;
+ say('1 bitki lifi topladın.');
+}
+
 
  refresh();
 });
@@ -396,6 +453,36 @@ $('eat').addEventListener('click',()=>{
  refresh();say('Meyve yedin.');
 
 });
+
+
+$('makeRope').addEventListener('click',()=>{
+ if(state.fiber<3){
+  say('İp üretmek için 3 bitki lifi gerekli.');
+  return;
+ }
+ state.fiber-=3;
+ state.rope++;
+ refresh();
+ say('1 ip ürettin.');
+});
+
+$('makeAxe').addEventListener('click',()=>{
+ if(state.axe){
+  say('Zaten bir baltan var.');
+  return;
+ }
+ if(state.wood<2||state.stone<1||state.rope<1){
+  say('Balta için 2 odun, 1 taş ve 1 ip gerekli.');
+  return;
+ }
+ state.wood-=2;
+ state.stone-=1;
+ state.rope-=1;
+ state.axe=true;
+ refresh();
+ say('Taş balta ürettin!');
+});
+
 
 $('craft').addEventListener('click',()=>{
 
