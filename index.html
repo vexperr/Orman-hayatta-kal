@@ -78,6 +78,44 @@ button:active{background:#4b7954}
 
 </div>
 
+
+<button id="inventoryToggle" style="position:fixed;top:155px;right:10px;z-index:8">
+🎒 ÇANTAM
+</button>
+
+<div id="inventoryPanel" style="
+display:none;
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+width:min(340px,90vw);
+background:#17251bf5;
+border:1px solid #ffffff55;
+border-radius:16px;
+padding:16px;
+z-index:10;
+color:white;
+font-family:Arial,sans-serif;
+">
+ <div style="display:flex;justify-content:space-between;align-items:center">
+  <b style="font-size:18px">🎒 ENVANTER</b>
+  <button id="inventoryClose">✕</button>
+ </div>
+
+ <div id="inventoryGrid" style="
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:8px;
+ margin-top:14px;
+ ">
+ </div>
+
+ <p style="font-size:11px;color:#b9c9bc;margin-bottom:0">
+ Topladığın kaynaklar burada görüntülenir.
+ </p>
+</div>
+
 <div id="joystick"><div id="stick"></div></div>
 
 <div id="actions">
@@ -311,6 +349,44 @@ function refresh(){
 
  }
 
+
+function renderInventory(){
+ const items=[
+  ['🪵','Odun',state.wood],
+  ['🪨','Taş',state.stone],
+  ['🌿','Bitki lifi',state.fiber],
+  ['🧵','İp',state.rope],
+  ['🪓','Taş balta',state.axe?1:0],
+  ['🍓','Meyve',state.berry],
+  ['🔥','Kamp ateşi',state.fire?1:0],
+  ['🏠','Barınak',shelterPosition?1:0]
+ ];
+
+ $('inventoryGrid').innerHTML=items.map(item=>`
+  <div style="
+   background:#ffffff12;
+   border:1px solid #ffffff22;
+   border-radius:10px;
+   padding:12px 4px;
+   text-align:center;
+  ">
+   <div style="font-size:25px">${item[0]}</div>
+   <div style="font-size:11px;margin:5px 0">${item[1]}</div>
+   <b>${item[2]}</b>
+  </div>
+ `).join('');
+}
+
+$('inventoryToggle').addEventListener('click',()=>{
+ renderInventory();
+ $('inventoryPanel').style.display='block';
+});
+
+$('inventoryClose').addEventListener('click',()=>{
+ $('inventoryPanel').style.display='none';
+});
+
+ 
  for(const k of ['wood','stone','berry'])$(k+'N').textContent=state[k];
 
  $('fireN').textContent=state.fire?'Var':'Yok';
