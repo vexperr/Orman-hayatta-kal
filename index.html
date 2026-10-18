@@ -94,6 +94,8 @@ button:active{background:#4b7954}
 
 <button id="makeShelter">🏠 BARINAK KUR (8 odun)</button>
 
+<button id="rest">🛏️ BARINAKTA DİNLEN</button>
+
 </div>
 
 <div id="status">Joystick ile yürü. Kamerayı çevirmek için ekranı sürükle.</div>
@@ -293,6 +295,8 @@ for(const x of [-.39,.39])capsule(.11,.39,skin,x,1.36,0);
 
 scene.add(player);
 
+let shelterPosition = null;
+
 const state={health:100,hunger:100,thirst:100,wood:0,stone:0,berry:0,fiber:0,rope:0,axe:false,fire:false};
 
 function say(s){$('status').textContent=s}
@@ -460,6 +464,31 @@ $('eat').addEventListener('click',()=>{
 });
 
 
+$('rest').addEventListener('click',()=>{
+ if(!shelterPosition){
+  say('Önce bir barınak kurmalısın.');
+  return;
+ }
+
+ const distance=Math.hypot(
+  player.position.x-shelterPosition.x,
+  player.position.z-shelterPosition.z
+ );
+
+ if(distance>4){
+  say('Dinlenmek için barınağa yaklaş.');
+  return;
+ }
+
+ state.health=Math.min(100,state.health+25);
+ state.hunger=Math.max(0,state.hunger-3);
+ state.thirst=Math.max(0,state.thirst-3);
+
+ refresh();
+ say('Barınakta dinlendin. Canın yenilendi.');
+});
+
+
 $('makeShelter').addEventListener('dblclick',()=>{
  state.health=Math.min(100,state.health+25);
  state.hunger=Math.max(0,state.hunger-3);
@@ -559,6 +588,12 @@ $('makeShelter').addEventListener('click',()=>{
  );
 
  scene.add(shelter);
+ 
+ shelterPosition = new THREE.Vector3(
+ shelter.position.x,
+ shelter.position.y,
+ shelter.position.z
+);
  refresh();
  say('Barınak kuruldu! Yanına yaklaşarak dinlenebilirsin.');
 });
