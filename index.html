@@ -590,6 +590,10 @@ $('craft').addEventListener('click',()=>{
 
 });
 
+let dayTime = 0;
+const dayLength = 240;
+const skyDay = new THREE.Color(0x9ebbc2);
+const skyNight = new THREE.Color(0x101827);
 const clock=new THREE.Clock();
 
 let walkTime=0,elapsed=0;
@@ -602,6 +606,15 @@ function animate(){
 
  const dt=Math.min(clock.getDelta(),.04);
 
+ dayTime = (dayTime + dt / dayLength) % 1;
+
+const daylight = (Math.sin(dayTime * Math.PI * 2 - Math.PI / 2) + 1) / 2;
+
+scene.background.copy(skyNight).lerp(skyDay, daylight);
+scene.fog.color.copy(scene.background);
+
+sun.intensity = 0.15 + daylight * 1.85;
+ 
  elapsed+=dt;
 
  if(elapsed>5){
