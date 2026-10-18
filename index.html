@@ -92,6 +92,8 @@ button:active{background:#4b7954}
 
 <button id="craft">🔥 ATEŞ YAK (3 odun)</button>
 
+<button id="makeShelter">🏠 BARINAK KUR (8 odun)</button>
+
 </div>
 
 <div id="status">Joystick ile yürü. Kamerayı çevirmek için ekranı sürükle.</div>
@@ -458,6 +460,15 @@ $('eat').addEventListener('click',()=>{
 });
 
 
+$('makeShelter').addEventListener('dblclick',()=>{
+ state.health=Math.min(100,state.health+25);
+ state.hunger=Math.max(0,state.hunger-3);
+ state.thirst=Math.max(0,state.thirst-3);
+ refresh();
+ say('Dinlendin. Canın yenilendi.');
+});
+
+
 $('makeRope').addEventListener('click',()=>{
  if(state.fiber<3){
   say('İp üretmek için 3 bitki lifi gerekli.');
@@ -484,6 +495,72 @@ $('makeAxe').addEventListener('click',()=>{
  state.axe=true;
  refresh();
  say('Taş balta ürettin!');
+});
+
+
+$('makeShelter').addEventListener('click',()=>{
+ if(state.wood<8){
+  say('Barınak için 8 odun gerekli.');
+  return;
+ }
+
+ state.wood-=8;
+
+ const shelter=new THREE.Group();
+ const woodMat=mat(0x76502f);
+ const roofMat=mat(0x4a3928);
+
+ // Yan direkler
+ for(const x of [-1.5,1.5]){
+  for(const z of [-1,1]){
+   const post=new THREE.Mesh(
+    new THREE.BoxGeometry(.16,2.2,.16),
+    woodMat
+   );
+   post.position.set(x,1.1,z);
+   shelter.add(post);
+  }
+ }
+
+ // Çatı kirişleri
+ for(const z of [-1,1]){
+  const beam=new THREE.Mesh(
+   new THREE.BoxGeometry(3.4,.16,.16),
+   woodMat
+  );
+  beam.position.set(0,2.15,z);
+  shelter.add(beam);
+ }
+
+ // Eğik çatı yüzeyleri
+ for(const side of [-1,1]){
+  const roof=new THREE.Mesh(
+   new THREE.BoxGeometry(1.9,.12,2.5),
+   roofMat
+  );
+  roof.position.set(side*.55,2.55,0);
+  roof.rotation.z=side*.48;
+  shelter.add(roof);
+ }
+
+ // Arka duvar
+ const back=new THREE.Mesh(
+  new THREE.BoxGeometry(3,1.8,.12),
+  woodMat
+ );
+ back.position.set(0,.9,1);
+ shelter.add(back);
+
+ // Barınağı karakterin önüne koy
+ shelter.position.set(
+  player.position.x-Math.sin(player.rotation.y)*3,
+  0,
+  player.position.z-Math.cos(player.rotation.y)*3
+ );
+
+ scene.add(shelter);
+ refresh();
+ say('Barınak kuruldu! Yanına yaklaşarak dinlenebilirsin.');
 });
 
 
